@@ -1,0 +1,16 @@
+{
+  "name": "dlm-pdf-platform",
+  "version": "2.0.0",
+  "description": "DRM de PDF via AES-256-CBC + MetaMask. Chave mestra no servidor.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

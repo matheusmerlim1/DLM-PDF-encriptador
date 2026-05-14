@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "agent",
+            "timeout": 120,
+            "statusMessage": "Agente de testes: analisando alterações...",
+            "prompt": "Você é o agente de testes e segurança do projeto DLM-PDF Platform (DRM via blockchain/MetaMask). Um arquivo foi recém-modificado.\n\nEntrada JSON recebida: $ARGUMENTS\n\nExecute em sequência:\n\n1. **Identificar arquivo**: extraia o caminho de tool_input.file_path. Se não existir, encerre silenciosamente.\n\n2. **Ler e classificar o arquivo** com Read:\n   - js/crypto.js → verificar: readDLMHeader (v1/v2), parsing de buffer, valores inválidos\n   - server.js → verificar: validação de assinatura MetaMask (janela 5 min), HMAC timing-safe, ownership check, parseDLMHeader, injeção nos parâmetros\n   - js/reader.js → verificar: verificação de ownerAddress antes de habilitar botão, bloqueio de demo mode\n   - js/publisher.js → verificar: validação de ownerAddress (regex 0x), sanitização de inputs\n   - index.html → verificar: XSS via innerHTML, ausência de CSP, scripts externos confiáveis\n   - Outros → verificar padrões gerais OWASP (XSS, injection, secrets expostos)\n\n3. **Localizar testes existentes**: use Glob com padrões test*.js, *.test.js, tests/*.js, __tests__/*.js\n\n4. **Criar testes se necessário**: se não existir teste para o arquivo modificado:\n   - Leia package.json para identificar framework (jest, mocha, tap)\n   - Se não houver framework, use node:test + node:assert (built-in Node.js 18+)\n   - Crie em tests/<nome-do-arquivo>.test.js com ao menos 3 casos:\n     * Caminho feliz (comportamento esperado)\n     * Entrada inválida (deve lançar erro ou retornar null/false)\n     * Caso de segurança (ex: arquivo DLM com owner errado deve ser rejeitado)\n   - Para crypto.js: testar readDLMHeader com arquivo válido v2, arquivo v1, e buffer corrompido\n   - Para server.js: testar parseDLMHeader, verificação de HMAC, janela de assinatura expirada\n\n5. **Executar testes**: se scripts.test existir no package.json, execute `npm test` via Bash. Limite saída a 50 linhas.\n\n6. **Registrar alertas**: se encontrar problema de segurança crítico, escreva com Bash em .claude/security-alerts.log:\n   [YYYY-MM-DDTHH:mm:ss] <arquivo>: <descrição do problema>\n   Crie o arquivo se não existir (mkdir -p .claude).\n\nRegras: não modifique arquivos de código-fonte. Apenas crie/atualize arquivos em tests/ e .claude/security-alerts.log. Seja conciso."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 10,
+            "statusMessage": "Gerando checklist de segurança...",
+            "command": "$status = git status --porcelain 2>$null; $criticos = git diff --name-only HEAD 2>$null | Select-String -Pattern 'crypto|server|auth|key|encrypt|decrypt|reader'; $msg = if ($criticos) { '⚠ Arquivos críticos modificados: ' + ($criticos -join ', ') + '. Execute /security-review antes do PR.' } elseif ($status) { 'Sessão encerrada com alterações pendentes. Verifique testes e segurança.' } else { 'Sessão encerrada. Sem alterações pendentes.' }; @{ systemMessage = $msg } | ConvertTo-Json -Compress"
+          }
+        ]
+      }
+    ]
+  }
+}
