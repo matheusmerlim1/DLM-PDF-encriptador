@@ -23,7 +23,6 @@
 'use strict';
 
 let walletAddr    = null;
-let isDemoMode    = false;
 let readDLMBuffer = null;
 let fileVersion   = null;   // 1 ou 2
 let fileOwnerAddr = null;
@@ -34,7 +33,6 @@ const DLM_API_BASE = window.DLM_API_BASE || 'https://dlm-pdf-server-production.u
 
 function initReader() {
   document.getElementById('btn-connect').addEventListener('click', connectMetaMask);
-  document.getElementById('btn-demo').addEventListener('click', connectDemo);
   UI.setupDrop('read-drop', 'read-file', '.dlm', handleDLMLoad);
   document.getElementById('btn-open').addEventListener('click', handleOpen);
 }
@@ -54,13 +52,6 @@ async function connectMetaMask() {
   }
 }
 
-function connectDemo() {
-  const bytes = DLMCrypto.randomBytes(20);
-  walletAddr  = '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  isDemoMode  = true;
-  showWallet();
-  UI.toast('Modo demo: carteira simulada. Abertura de arquivos requer MetaMask real.', 'info');
-}
 
 function showWallet() {
   const badge = document.getElementById('wallet-badge');
@@ -113,12 +104,6 @@ function checkOpenReady() {
   const btn = document.getElementById('btn-open');
 
   if (!walletAddr || !readDLMBuffer) { btn.disabled = true; return; }
-
-  if (isDemoMode) {
-    btn.disabled = true;
-    UI.toast('Modo demo não permite abrir arquivos. Conecte sua MetaMask.', 'err');
-    return;
-  }
 
   // v2: obrigatoriamente verifica que carteira conectada é a dona do arquivo
   if (fileVersion === 2) {
@@ -240,7 +225,7 @@ async function openV1() {
   UI.setStep('rstep-4', 'active');
   UI.setProgress('read-prog', 50);
 
-  const dlmBase64 = btoa(String.fromCharCode(...new Uint8Array(readDLMBuffer)));
+  const dlmBase64 = DLMCrypto.bufToBase64(readDLMBuffer);
   const readResp  = await fetch(`${DLM_API_BASE}/licenses/${fileLicenseId}/read`, {
     method: 'POST',
     headers: {

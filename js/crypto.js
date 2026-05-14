@@ -63,6 +63,19 @@ function readDLMHeader(dlmBuffer) {
   return { version: 2, licenseId, ownerAddress };
 }
 
+/**
+ * Converte ArrayBuffer para string base64 sem estourar a call stack.
+ * btoa(String.fromCharCode(...bytes)) falha com arquivos > ~1 MB.
+ */
+function bufToBase64(buf) {
+  const bytes = new Uint8Array(buf instanceof ArrayBuffer ? buf : buf.buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  }
+  return btoa(binary);
+}
+
 window.DLMCrypto = {
   DLM_MAGIC_V2,
   hexToBytes,
@@ -70,5 +83,6 @@ window.DLMCrypto = {
   randomBytes,
   sha256,
   readDLMHeader,
-  readLicenseId: readDLMHeader, // alias para compatibilidade com versões anteriores
+  readLicenseId: readDLMHeader,
+  bufToBase64,
 };
