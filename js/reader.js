@@ -40,14 +40,32 @@ function initReader() {
 // ── Conexão de Carteira ───────────────────────────────────
 
 async function connectMetaMask() {
-  if (!window.ethereum) { UI.toast('MetaMask não encontrado.', 'err'); return; }
+  // MetaMask pode demorar até 1s para injetar window.ethereum após o carregamento da página
+  if (!window.ethereum) {
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  if (!window.ethereum) {
+    UI.toast(
+      'MetaMask não encontrado. Instale a extensão em metamask.io, recarregue a página e tente novamente.',
+      'err', 7000
+    );
+    return;
+  }
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || accounts.length === 0) {
+      UI.toast('Nenhuma conta encontrada no MetaMask. Desbloqueie a carteira e tente novamente.', 'err');
+      return;
+    }
     walletAddr = accounts[0].toLowerCase();
     showWallet();
     UI.toast('Carteira MetaMask conectada!', 'ok');
-  } catch {
-    UI.toast('Conexão com MetaMask recusada.', 'err');
+  } catch (err) {
+    if (err.code === 4001) {
+      UI.toast('Conexão recusada pelo usuário no MetaMask.', 'err');
+    } else {
+      UI.toast('Erro ao conectar MetaMask: ' + (err.message || err), 'err');
+    }
   }
 }
 
