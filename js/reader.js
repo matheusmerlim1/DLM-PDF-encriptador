@@ -40,21 +40,32 @@ function initReader() {
 // ── Conexão de Carteira ───────────────────────────────────
 
 async function connectMetaMask() {
-  // MetaMask pode demorar até 1s para injetar window.ethereum após o carregamento da página
-  if (!window.ethereum) {
-    await new Promise(r => setTimeout(r, 1000));
-  }
-  if (!window.ethereum) {
+  // Tenta obter o provider via window.ethereum (injeção clássica) ou
+  // via EIP-6963 (padrão moderno que MetaMask 11+ usa em domínios novos).
+  // Aguarda até 3s porque GitHub Pages pode demorar a liberar a injeção.
+  let provider = window.ethereum || await new Promise(resolve => {
+    const timer = setTimeout(() => resolve(window.ethereum || null), 3000);
+    window.addEventListener('eip6963:announceProvider', e => {
+      clearTimeout(timer);
+      resolve(e.detail.provider);
+    }, { once: true });
+    window.dispatchEvent(new Event('eip6963:requestProvider'));
+  });
+
+  if (!provider) {
     UI.toast(
-      'MetaMask não encontrado. Instale a extensão em metamask.io, recarregue a página e tente novamente.',
-      'err', 7000
+      'MetaMask não encontrado. Verifique: (1) extensão instalada em metamask.io, ' +
+      '(2) MetaMask habilitado para este site no ícone da extensão, ' +
+      '(3) recarregue a página após habilitar.',
+      'err', 9000
     );
     return;
   }
+
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const accounts = await provider.request({ method: 'eth_requestAccounts' });
     if (!accounts || accounts.length === 0) {
-      UI.toast('Nenhuma conta encontrada no MetaMask. Desbloqueie a carteira e tente novamente.', 'err');
+      UI.toast('Nenhuma conta encontrada. Desbloqueie o MetaMask e tente novamente.', 'err');
       return;
     }
     walletAddr = accounts[0].toLowerCase();
@@ -62,7 +73,7 @@ async function connectMetaMask() {
     UI.toast('Carteira MetaMask conectada!', 'ok');
   } catch (err) {
     if (err.code === 4001) {
-      UI.toast('Conexão recusada pelo usuário no MetaMask.', 'err');
+      UI.toast('Conexão recusada. Clique em "Conectar" no MetaMask quando solicitado.', 'err');
     } else {
       UI.toast('Erro ao conectar MetaMask: ' + (err.message || err), 'err');
     }
