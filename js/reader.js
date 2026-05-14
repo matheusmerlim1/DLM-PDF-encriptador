@@ -44,7 +44,6 @@ async function connectMetaMask() {
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     walletAddr = accounts[0].toLowerCase();
-    isDemoMode = false;
     showWallet();
     UI.toast('Carteira MetaMask conectada!', 'ok');
   } catch {
