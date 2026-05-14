@@ -72,8 +72,11 @@
             <input type="text" id="pub-title" placeholder="Ex: O Senhor dos Anéis" />
           </div>
           <div class="field">
-            <label>Endereço do proprietário (wallet)</label>
-            <input type="text" id="pub-owner" placeholder="0x... (opcional)" />
+            <label>Endereço do proprietário (wallet) — obrigatório</label>
+            <div style="display:flex;gap:.5rem">
+              <input type="text" id="pub-owner" placeholder="0x... ou busque por username" style="flex:1" />
+              <button class="btn btn-ghost" id="btn-lookup-owner" style="white-space:nowrap">🔍 Buscar</button>
+            </div>
           </div>
         </div>
       </div>
@@ -127,13 +130,12 @@
         </div>
       </div>
 
-      <!-- Nota de demonstração -->
+      <!-- Nota de segurança -->
       <div class="demo-note">
-        <strong>⚡ MODO DEMONSTRAÇÃO</strong>
-        A criptografia ocorre 100% no navegador via Web Crypto API
-        (AES-256-CBC + HKDF-SHA-256 + HMAC). Em produção, a chave mestra
-        reside no servidor de autenticação e o registro on-chain é feito
-        via Smart Contract.
+        <strong>🔐 DRM SERVER-SIDE</strong>
+        A chave mestra reside exclusivamente no servidor (variável de ambiente <code>DLM_MASTER_KEY</code>)
+        e nunca é enviada ao navegador. A descriptografia exige assinatura MetaMask real — modo demo
+        não consegue abrir arquivos.
       </div>
 
     </div><!-- /col-left -->
@@ -230,6 +232,16 @@
               style="color:var(--cyan)"
             />
           </div>
+          <div class="field">
+            <label>Proprietário embutido no arquivo</label>
+            <input
+              type="text"
+              id="read-owner"
+              placeholder="Extraído automaticamente do .dlm"
+              readonly
+              style="color:var(--accent)"
+            />
+          </div>
         </div>
       </div>
 
@@ -250,12 +262,12 @@
             <span class="step-txt">Assinar nonce com carteira</span>
           </div>
           <div class="step" id="rstep-4">
-            <span class="step-ico" data-icon="⛓️">⛓️</span>
-            <span class="step-txt">Validar posse na Blockchain</span>
+            <span class="step-ico" data-icon="🖥️">🖥️</span>
+            <span class="step-txt">Verificar titularidade no servidor</span>
           </div>
           <div class="step" id="rstep-5">
             <span class="step-ico" data-icon="🔑">🔑</span>
-            <span class="step-txt">Derivar chave + verificar HMAC</span>
+            <span class="step-txt">Descriptografar no servidor (HMAC ok)</span>
           </div>
           <div class="step" id="rstep-6">
             <span class="step-ico" data-icon="📖">📖</span>
@@ -336,11 +348,11 @@
 <!-- ══════════════════════════════════════════════
      SCRIPTS (ordem de dependência)
      ══════════════════════════════════════════════ -->
-<script src="js/crypto.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/publisher.js"></script>
-<script src="js/reader.js"></script>
-<script src="js/main.js"></script>
+<script src="js/crypto.js?v=2"></script>
+<script src="js/ui.js?v=2"></script>
+<script src="js/publisher.js?v=2"></script>
+<script src="js/reader.js?v=2"></script>
+<script src="js/main.js?v=2"></script>
 
 </body>
 </html>
