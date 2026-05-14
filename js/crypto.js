@@ -70,4 +70,5 @@ window.DLMCrypto = {
   randomBytes,
   sha256,
   readDLMHeader,
+  readLicenseId: readDLMHeader, // alias para compatibilidade com versões anteriores
 };
