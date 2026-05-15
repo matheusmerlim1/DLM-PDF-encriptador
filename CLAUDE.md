@@ -16,10 +16,17 @@ npm start              # Servidor na porta 3000
 ```
 Browser (index.html)
     ↕ fetch (FormData)
-server.js  →  /api/encrypt  (recebe PDF, retorna .dlm)
-           →  /api/decrypt  (recebe .dlm + assinatura MetaMask, retorna PDF)
-           →  /api/users/*  (registro e lookup de usernames)
+server.js  →  /api/encrypt  (proxy → DLM PDF API /encrypt, formato v3)
+           →  /api/decrypt  (v3: proxy → DLM PDF API /decrypt com cadeia de custódia)
+                            (v2 legado: descriptografa localmente com DLM_MASTER_KEY)
+           →  /api/users/*  (registro e lookup de usuários)
+
+DLM PDF API (DRM_API_URL)
+    ↕ criptografia centralizada AES-256-CBC v3 + cadeia de custódia
 ```
+
+**Toda nova criptografia é realizada pela DLM PDF API** — este servidor apenas faz proxy.
+Arquivos `.dlm v2` antigos continuam sendo lidos localmente (compatibilidade).
 
 O frontend é **HTML + Vanilla JS puro**. Cada módulo em `js/`:
 
@@ -54,6 +61,16 @@ ciphertext NB  : PDF cifrado AES-256-CBC
 
 **Não commitar:** `.env`, `storage/`
 
+## Ambiente — variáveis necessárias
+
+```bash
+# URL da DLM PDF API (criptografia centralizada v3)
+DRM_API_URL=http://localhost:3001/api/v1
+
+# Chave local legada para .dlm v2 (opcional se não houver arquivos antigos)
+DLM_MASTER_KEY=<64 hex chars>
+```
+
 ## Claude Code Skills
 
 | Skill | Quando usar |
@@ -61,6 +78,8 @@ ciphertext NB  : PDF cifrado AES-256-CBC
 | `/security-review` | Antes de qualquer PR tocando crypto, server.js ou autenticação |
 | `/review` | Revisão geral de código |
 | `/update-config` | Alterar hooks ou permissões |
+
+**Regra de segurança: após qualquer alteração no projeto, o agente de segurança é responsável por verificar todo o sistema (proxy DRM, compatibilidade v2/v3, assinatura MetaMask) antes do commit.**
 
 ## Regra de Commit
 
