@@ -10,6 +10,13 @@
  *    4. POST /api/decrypt no servidor local → recebe PDF
  *    5. Renderiza PDF
  *
+ *  v3 (DLM\x03) — gerado pela DRM API (APIDLM.encrypt):
+ *    1. Carrega .dlm → lê licenseId e ownerAddress do cabeçalho
+ *    2. Conecta MetaMask → verifica address == ownerAddress
+ *    3. Assina mensagem "DLM:decrypt:<licenseId>:<timestamp>"
+ *    4. POST /decrypt na DLM PDF API → recebe PDF + novo .dlm re-cifrado
+ *    5. Renderiza PDF
+ *
  *  v1 (DLM\x01) — gerado pela Livraria DLM / DLM PDF API:
  *    1. Carrega .dlm → lê licenseId do cabeçalho
  *    2. Conecta MetaMask
@@ -133,11 +140,11 @@ function checkOpenReady() {
 
   if (!walletAddr || !readDLMBuffer) { btn.disabled = true; return; }
 
-  // v2: obrigatoriamente verifica que carteira conectada é a dona do arquivo
-  if (fileVersion === 2) {
+  // v2 e v3: verifica que carteira conectada é a dona do arquivo
+  if (fileVersion === 2 || fileVersion === 3) {
     if (!fileOwnerAddr) {
       btn.disabled = true;
-      UI.toast('Arquivo .dlm v2 sem endereço de proprietário — arquivo corrompido.', 'err');
+      UI.toast(`Arquivo .dlm v${fileVersion} sem endereço de proprietário — arquivo corrompido.`, 'err');
       return;
     }
     if (walletAddr.toLowerCase() !== fileOwnerAddr.toLowerCase()) {
@@ -162,7 +169,9 @@ async function handleOpen() {
   UI.resetProgress('read-prog');
 
   try {
-    if (fileVersion === 2) {
+    if (fileVersion === 3) {
+      await openV3();
+    } else if (fileVersion === 2) {
       await openV2();
     } else {
       await openV1();
@@ -174,6 +183,54 @@ async function handleOpen() {
 
   btn.innerHTML = '🔓 Abrir e-book';
   btn.disabled  = false;
+}
+
+// ── V3: DLM PDF API com cadeia de custódia ────────────────
+
+async function openV3() {
+  // Step 3: Assina mensagem com MetaMask (prova de posse da carteira)
+  UI.setStep('rstep-3', 'active');
+  UI.setProgress('read-prog', 20);
+
+  const timestamp = Date.now();
+  const message   = `DLM:decrypt:${fileLicenseId}:${timestamp}`;
+  const signature = await window.ethereum.request({
+    method: 'personal_sign',
+    params: [message, walletAddr],
+  });
+  UI.setStep('rstep-3', 'done');
+
+  // Step 4: Envia para a DLM PDF API → verifica licenseRegistry + descriptografa
+  UI.setStep('rstep-4', 'active');
+  UI.setProgress('read-prog', 50);
+
+  const dlmBase64 = DLMCrypto.bufToBase64(readDLMBuffer);
+  const resp = await fetch(`${DLM_API_BASE}/decrypt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      dlmBase64,
+      publicKey: walletAddr,
+      signature,
+      message,
+    }),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || 'Acesso negado pela API DRM.');
+  }
+  UI.setStep('rstep-4', 'done');
+
+  // Step 5: Decodifica PDF recebido
+  UI.setStep('rstep-5', 'active');
+  UI.setProgress('read-prog', 75);
+
+  const { pdfBase64 } = await resp.json();
+  const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0)).buffer;
+  UI.setStep('rstep-5', 'done');
+
+  await finishOpen(pdfBuffer, fileLicenseId, walletAddr);
 }
 
 // ── V2: servidor local (encriptador próprio) ──────────────

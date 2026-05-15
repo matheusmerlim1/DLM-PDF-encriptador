@@ -81,6 +81,8 @@ DLM_MASTER_KEY=<64 hex chars>
 
 **Regra de segurança: após qualquer alteração no projeto, o agente de segurança é responsável por verificar todo o sistema (proxy DRM, compatibilidade v2/v3, assinatura MetaMask) antes do commit.**
 
+**Regra de erros: sempre que um erro for encontrado e corrigido, um teste automatizado ou cenário de teste referente a ele deve ser criado imediatamente. Não corrigir sem testar.**
+
 ## Regra de Commit
 
 **Sempre que houver qualquer alteração no projeto, realizar o commit imediatamente após a mudança.**

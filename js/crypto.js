@@ -17,6 +17,7 @@
 'use strict';
 
 const DLM_MAGIC_V2 = [0x44, 0x4C, 0x4D, 0x02]; // "DLM\x02"
+const DLM_MAGIC_V3 = [0x44, 0x4C, 0x4D, 0x03]; // "DLM\x03"
 
 function hexToBytes(hex) {
   return new Uint8Array(hex.match(/.{2}/g).map(h => parseInt(h, 16)));
@@ -51,16 +52,18 @@ function readDLMHeader(dlmBuffer) {
   const bytes = new Uint8Array(dlmBuffer);
   const isV1  = bytes[0] === 0x44 && bytes[1] === 0x4C && bytes[2] === 0x4D && bytes[3] === 0x01;
   const isV2  = bytes[0] === 0x44 && bytes[1] === 0x4C && bytes[2] === 0x4D && bytes[3] === 0x02;
+  const isV3  = bytes[0] === 0x44 && bytes[1] === 0x4C && bytes[2] === 0x4D && bytes[3] === 0x03;
 
-  if (!isV1 && !isV2) throw new Error('Arquivo .dlm inválido: formato não reconhecido.');
+  if (!isV1 && !isV2 && !isV3) throw new Error('Arquivo .dlm inválido: formato não reconhecido.');
 
   const view      = new DataView(dlmBuffer);
   const licenseId = view.getBigUint64(4, false).toString();
 
   if (isV1) return { version: 1, licenseId, ownerAddress: null };
 
+  // v2 e v3 têm ownerAddr nos bytes 12–54
   const ownerAddress = new TextDecoder('ascii').decode(bytes.slice(12, 54)).replace(/\0/g, '').trim();
-  return { version: 2, licenseId, ownerAddress };
+  return { version: isV3 ? 3 : 2, licenseId, ownerAddress };
 }
 
 /**
@@ -78,6 +81,7 @@ function bufToBase64(buf) {
 
 window.DLMCrypto = {
   DLM_MAGIC_V2,
+  DLM_MAGIC_V3,
   hexToBytes,
   bytesToHex,
   randomBytes,
