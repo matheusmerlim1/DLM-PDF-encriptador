@@ -314,9 +314,13 @@ app.post('/api/decrypt', upload.single('dlm'), async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`\nDLM-PDF Platform -> http://localhost:${PORT}`);
-  console.log(`DRM API (criptografia central): ${DRM_API_URL}`);
-  if (MASTER_KEY) console.log(`Chave local v2: ${MASTER_KEY.length * 8}-bit (compatibilidade legada)\n`);
-  else console.log('Chave local v2: NÃO configurada (apenas v3 via DRM API)\n');
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\nDLM-PDF Platform -> http://localhost:${PORT}`);
+    console.log(`DRM API (criptografia central): ${DRM_API_URL}`);
+    if (MASTER_KEY) console.log(`Chave local v2: ${MASTER_KEY.length * 8}-bit (compatibilidade legada)\n`);
+    else console.log('Chave local v2: NÃO configurada (apenas v3 via DRM API)\n');
+  });
+}
+
+module.exports = app;

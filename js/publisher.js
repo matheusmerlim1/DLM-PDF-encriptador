@@ -55,9 +55,19 @@ async function handleEncrypt() {
 
   const licenseId    = document.getElementById('pub-licid').value.trim() || '1';
   const ownerAddress = document.getElementById('pub-owner').value.trim();
+  const userName     = document.getElementById('pub-name').value.trim();
+  const userCPF      = document.getElementById('pub-cpf').value.replace(/\D/g, '');
 
   if (!/^0x[0-9a-fA-F]{40}$/.test(ownerAddress)) {
     UI.toast('Endereço do proprietário inválido. Informe uma carteira Ethereum (0x...) ou use "Buscar username".', 'err');
+    return;
+  }
+  if (userName.length < 3) {
+    UI.toast('Nome completo obrigatório (mínimo 3 caracteres).', 'err');
+    return;
+  }
+  if (userCPF.length !== 11) {
+    UI.toast('CPF inválido. Informe 11 dígitos.', 'err');
     return;
   }
 
@@ -76,7 +86,9 @@ async function handleEncrypt() {
     const formData = new FormData();
     formData.append('pdf', new Blob([pubPdfBuffer], { type: 'application/pdf' }), 'file.pdf');
     formData.append('licenseId', licenseId);
-    formData.append('ownerAddress', ownerAddress);
+    formData.append('publicKey', ownerAddress);
+    formData.append('userName', userName);
+    formData.append('userCPF', userCPF);
 
     const resp = await fetch('/api/encrypt', { method: 'POST', body: formData });
     if (!resp.ok) {

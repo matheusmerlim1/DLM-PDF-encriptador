@@ -121,7 +121,17 @@ async function handleDLMLoad(file) {
 
     UI.setStep('rstep-1', 'done');
     UI.setStep('rstep-2', 'done');
-    UI.toast(`Arquivo .dlm v${version} carregado — License #${licenseId}`, 'ok');
+
+    if (version === 1) {
+      UI.toast(
+        'Arquivo v1 (legado): criado antes do DRM v3. ' +
+        'Este formato exige validação blockchain — recomendamos recriar o arquivo ' +
+        'usando o publisher atualizado para gerar um .dlm v3 (abrível sem blockchain).',
+        'err', 10000
+      );
+    } else {
+      UI.toast(`Arquivo .dlm v${version} carregado — License #${licenseId}`, 'ok');
+    }
   } catch (err) {
     UI.toast('Arquivo inválido: ' + err.message, 'err');
     readDLMBuffer = null;
